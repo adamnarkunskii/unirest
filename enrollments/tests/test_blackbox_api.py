@@ -71,6 +71,19 @@ def student():
     assert r.status_code == 404
 
 
+def test_get_enrolled_students(student, course):
+    get_enrolled_students(course, count=0)
+    enrol(course, student)
+    get_enrolled_students(course, count=1)
+
+
+def get_enrolled_students(course, count):
+    r = requests.get(STUDENTS_API_ROOT + 'enrolled/', params={'course': course['id']})
+    assert r.ok
+    enrolled = r.json()
+    assert len(enrolled) == count
+
+
 def test_student_filters(student):
     verify_filter(requests.get(STUDENTS_API_ROOT, params={'name': 'Nat'}))
     verify_filter(requests.get(STUDENTS_API_ROOT, params={'city': 'Tel'}), empty=True)
@@ -81,6 +94,7 @@ def test_student_filters(student):
 def test_course_filters(course):
     verify_filter(requests.get(COURSES_API_ROOT, params={'minimal_points': 1}))
     verify_filter(requests.get(COURSES_API_ROOT, params={'minimal_points': 10}), empty=True)
+
 
 def verify_filter(response, empty=False):
     assert response.ok

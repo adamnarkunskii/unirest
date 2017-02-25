@@ -1,7 +1,7 @@
 import functools
 
 from rest_framework import status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_mongoengine import viewsets
@@ -15,6 +15,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     Information about a course
     '''
     lookup_field = 'id'
+
     serializer_class = CourseSerializer
 
     permission_classes = (AllowAny,)
@@ -24,12 +25,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         minimal_points = self.request.query_params.get('minimal_points', None)
         if minimal_points is not None:
             queryset = queryset.filter(points__gte=minimal_points)
-
         return queryset
-
-    @detail_route(methods=['get'], permission_classes=[AllowAny], url_path='enrolled')
-    def enrol(self, request, id=None):
-        course = self.get_object()
 
 
 class StudentViewSet(viewsets.ModelViewSet):
@@ -56,6 +52,25 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @list_route(permission_classes=[AllowAny])
+    def bulk_enrol(self, request, **kwargs):
+        pass
+
+    @list_route(permission_classes=[AllowAny])
+    def enrolled(self, request, **kwargs):
+        course_id = request.query_params.get('course')
+        try:
+            course = Course.objects.get(id=course_id)
+        except Exception as e:
+            return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        enrolled_students = filter(lambda student: course in student.enrolled_courses(),
+                                   Student.objects.all())
+
+        serializer = self.get_serializer(enrolled_students, many=True)
+        return Response(serializer.data)
+
     @detail_route(methods=['post'], permission_classes=[AllowAny], url_path='enrol')
     def enrol(self, request, id=None):
         student = self.get_object()
@@ -67,8 +82,7 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        existing_courses = map(lambda enrollment: enrollment.course, student.enrollments)
-        if course in existing_courses:
+        if course in student.enrolled_courses():
             return Response(data={'error': 'Student already enrolled to course %s' % course_id, 'details': ''},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -86,8 +100,7 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        existing_courses = map(lambda enrollment: enrollment.course, student.enrollments)
-        if course not in existing_courses:
+        if course not in student.enrolled_courses():
             return Response(data={'error': 'Student not enrolled to course %s' % course_id, 'details': ''},
                             status=status.HTTP_400_BAD_REQUEST)
 

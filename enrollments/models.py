@@ -39,3 +39,6 @@ class Student(Document):
 
     def __repr__(self):
         return '<Student %s %s (%s enrollments)>' % (self.name, self.email, len(self.enrollments))
+
+    def enrolled_courses(self):
+        return map(lambda enrollment: enrollment.course, self.enrollments)
