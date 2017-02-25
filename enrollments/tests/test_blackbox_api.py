@@ -71,6 +71,26 @@ def student():
     assert r.status_code == 404
 
 
+def test_student_filters(student):
+    verify_filter(requests.get(STUDENTS_API_ROOT, params={'name': 'Nat'}))
+    verify_filter(requests.get(STUDENTS_API_ROOT, params={'city': 'Tel'}), empty=True)
+    verify_filter(requests.get(STUDENTS_API_ROOT, params={'minimal_year': '1987'}))
+    verify_filter(requests.get(STUDENTS_API_ROOT, params={'minimal_year': '2000'}), empty=True)
+
+
+def test_course_filters(course):
+    verify_filter(requests.get(COURSES_API_ROOT, params={'minimal_points': 1}))
+    verify_filter(requests.get(COURSES_API_ROOT, params={'minimal_points': 10}), empty=True)
+
+def verify_filter(response, empty=False):
+    assert response.ok
+    filtered = response.json()
+    if empty:
+        assert len(filtered) == 0
+    else:
+        assert len(filtered) == 1
+
+
 def test_patch_course(course):
     course_path = path_for_course(course)
 
@@ -102,16 +122,19 @@ def test_cant_enrol_twice(student, course):
     assert not r.ok
 
 
-def test_basic_enrol(student, course):
+def test_basic_enrollment(student, course):
+    enrol(course, student)
+
+
+def enrol(course, student):
     student_path = path_for_student(student)
-    enrollment = {
+    enrollment_data = {
         'course': course['id'],
         'grade': None
     }
-    r = requests.post(student_path + 'enrol/', data=enrollment)
+    r = requests.post(student_path + 'enrol/', data=enrollment_data)
     assert r.ok
-
-    verify_enrollment(course, enrollment, student_path)
+    verify_enrollment(course, enrollment_data, student_path)
 
 
 def test_assign_a_student_to_a_course_and_grade(student, course):

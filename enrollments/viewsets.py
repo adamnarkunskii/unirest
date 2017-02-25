@@ -1,4 +1,5 @@
-from mongoengine import ValidationError
+import functools
+
 from rest_framework import status
 from rest_framework.decorators import detail_route
 from rest_framework.permissions import AllowAny
@@ -19,7 +20,16 @@ class CourseViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny,)
 
     def get_queryset(self):
-        return Course.objects.all()
+        queryset = Course.objects.all()
+        minimal_points = self.request.query_params.get('minimal_points', None)
+        if minimal_points is not None:
+            queryset = queryset.filter(points__gte=minimal_points)
+
+        return queryset
+
+    @detail_route(methods=['get'], permission_classes=[AllowAny], url_path='enrolled')
+    def enrol(self, request, id=None):
+        course = self.get_object()
 
 
 class StudentViewSet(viewsets.ModelViewSet):
@@ -32,7 +42,19 @@ class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny,)
 
     def get_queryset(self):
-        return Student.objects.all()
+        queryset = Student.objects.all()
+        name = self.request.query_params.get('name', None)
+        if name is not None:
+            queryset = queryset.filter(name__contains=name)
+        city = self.request.query_params.get('city', None)
+        if city is not None:
+            queryset = queryset.filter(city__contains=city)
+
+        minimal_year = self.request.query_params.get('minimal_year', None)
+        if minimal_year is not None:
+            queryset = queryset.filter(year_of_birth__gte=minimal_year)
+
+        return queryset
 
     @detail_route(methods=['post'], permission_classes=[AllowAny], url_path='enrol')
     def enrol(self, request, id=None):

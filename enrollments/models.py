@@ -32,7 +32,7 @@ class Enrollment(EmbeddedDocument):
 class Student(Document):
     name = fields.StringField(required=True)
     city = fields.StringField(required=True)
-    email = fields.EmailField(required=True)
+    email = fields.EmailField(required=True, unique=True)
     year_of_birth = fields.IntField(required=True)
 
     enrollments = fields.EmbeddedDocumentListField('Enrollment')
