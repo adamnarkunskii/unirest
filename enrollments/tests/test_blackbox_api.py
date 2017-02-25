@@ -16,16 +16,21 @@ def test_create_get_delete_course():
 
     r = requests.post(COURSES_API_ROOT, data=data)
     assert r.ok
-    course_id = r.json()['id']
 
-    r = requests.get(COURSES_API_ROOT + course_id + '/')
+    course_path = COURSES_API_ROOT + r.json()['id'] + '/'
+    r = requests.get(course_path)
     assert r.ok
     assert r.json()['subject'] == data['subject']
 
-    r = requests.delete(COURSES_API_ROOT + course_id + '/')
+    new_subject = 'Linear Algebra 2'
+    r = requests.patch(course_path, data={'subject': new_subject})
+    assert r.ok
+    assert r.json()['subject'] == new_subject
+
+    r = requests.delete(course_path)
     assert r.ok
 
-    r = requests.get(COURSES_API_ROOT + course_id + '/')
+    r = requests.get(course_path)
     assert r.status_code == 404
 
 
@@ -40,14 +45,19 @@ def test_create_get_delete_student():
 
     r = requests.post(STUDENTS_API_ROOT, data=data)
     assert r.ok
-    student_id = r.json()['id']
 
-    r = requests.get(STUDENTS_API_ROOT + student_id + '/')
+    student_path = STUDENTS_API_ROOT + r.json()['id'] + '/'
+    r = requests.get(student_path)
     assert r.ok
     assert data['name'] == r.json()['name']
 
-    r = requests.delete(STUDENTS_API_ROOT + student_id + '/')
+    new_name = 'Natalie Shk'
+    r = requests.patch(student_path, data={'name': new_name})
+    assert r.ok
+    assert r.json()['name'] == new_name
+
+    r = requests.delete(student_path)
     assert r.ok
 
-    r = requests.get(STUDENTS_API_ROOT + student_id + '/')
+    r = requests.get(student_path)
     assert r.status_code == 404
