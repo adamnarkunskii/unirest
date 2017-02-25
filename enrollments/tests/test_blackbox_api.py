@@ -6,6 +6,14 @@ COURSES_API_ROOT = HOST + 'courses/'
 STUDENTS_API_ROOT = HOST + 'students/'
 
 
+def path_for_course(course):
+    return COURSES_API_ROOT + course['id'] + '/'
+
+
+def path_for_student(student):
+    return STUDENTS_API_ROOT + student['id'] + '/'
+
+
 @pytest.fixture
 def course():
     data = {
@@ -18,11 +26,11 @@ def course():
 
     r = requests.post(COURSES_API_ROOT, data=data)
     assert r.ok
-    assert r.json()['subject'] == data['subject']
+    course = r.json()
 
-    yield r.json()
-
-    course_path = COURSES_API_ROOT + r.json()['id'] + '/'
+    assert course['subject'] == data['subject']
+    yield course
+    course_path = path_for_course(course)
 
     r = requests.delete(course_path)
     assert r.ok
@@ -44,12 +52,13 @@ def student():
     r = requests.post(STUDENTS_API_ROOT, data=data)
     assert r.ok
 
-    student_path = STUDENTS_API_ROOT + r.json()['id'] + '/'
+    student = r.json()
+    student_path = path_for_student(student)
     r = requests.get(student_path)
     assert r.ok
-    assert data['name'] == r.json()['name']
+    assert data['name'] == student['name']
 
-    yield r.json()
+    yield student
     r = requests.delete(student_path)
     assert r.ok
 
@@ -58,7 +67,7 @@ def student():
 
 
 def test_patch_course(course):
-    course_path = COURSES_API_ROOT + course['id'] + '/'
+    course_path = path_for_course(course)
 
     new_subject = 'Linear Algebra 2'
     r = requests.patch(course_path, data={'subject': new_subject})
@@ -67,9 +76,19 @@ def test_patch_course(course):
 
 
 def test_patch_student(student):
-    student_path = STUDENTS_API_ROOT + student['id'] + '/'
+    student_path = path_for_student(student)
 
     new_name = 'Natalie Shk'
     r = requests.patch(student_path, data={'name': new_name})
     assert r.ok
     assert r.json()['name'] == new_name
+
+
+def test_assign_a_student_to_a_course(student, course):
+    student_path = path_for_student(student)
+    enrollment = {
+        'course': course['id'],
+        'grade': None
+    }
+    r = requests.post(student_path + 'enrol/', data=enrollment)
+    assert r.ok

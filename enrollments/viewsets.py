@@ -1,7 +1,11 @@
+from mongoengine import ValidationError
+from rest_framework import status
+from rest_framework.decorators import detail_route
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from rest_framework_mongoengine import viewsets
 
-from enrollments.models import Course, Student
+from enrollments.models import Course, Student, Enrollment
 from enrollments.serializers import CourseSerializer, StudentSerializer
 
 
@@ -29,3 +33,18 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Student.objects.all()
+
+    @detail_route(methods=['post'], permission_classes=[AllowAny], url_path='enrol')
+    def enrol(self, request, id=None):
+        student = self.get_object()
+
+        course_id = request.data.get('course')
+        try:
+            course = Course.objects.get(id=course_id)
+        except Exception as e:
+            return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        student.enrollments.append(Enrollment(course=course, grade=None))
+        student.save()
+        return Response()
