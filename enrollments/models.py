@@ -42,3 +42,6 @@ class Student(Document):
 
     def enrolled_courses(self):
         return map(lambda enrollment: enrollment.course, self.enrollments)
+
+    def enrol(self, course, grade=None):
+        self.enrollments.append(Enrollment(course=course, grade=grade   ))

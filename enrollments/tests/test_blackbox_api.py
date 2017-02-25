@@ -71,13 +71,25 @@ def student():
     assert r.status_code == 404
 
 
+def test_bulk_enrol(student, course):
+    assert_enrolled_students(course, count=0)
+    r = requests.post(STUDENTS_API_ROOT + 'bulk_enrol/', params={'course': course['id'], 'name': 'Lucy'})
+    assert r.ok
+
+    assert_enrolled_students(course, count=0)
+    r = requests.post(STUDENTS_API_ROOT + 'bulk_enrol/', params={'course': course['id'], 'name': 'Na'})
+    assert r.ok
+
+    assert_enrolled_students(course, count=1)
+
+
 def test_get_enrolled_students(student, course):
-    get_enrolled_students(course, count=0)
+    assert_enrolled_students(course, count=0)
     enrol(course, student)
-    get_enrolled_students(course, count=1)
+    assert_enrolled_students(course, count=1)
 
 
-def get_enrolled_students(course, count):
+def assert_enrolled_students(course, count):
     r = requests.get(STUDENTS_API_ROOT + 'enrolled/', params={'course': course['id']})
     assert r.ok
     enrolled = r.json()

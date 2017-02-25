@@ -52,7 +52,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    @list_route(permission_classes=[AllowAny])
+    @list_route(methods=['post'], permission_classes=[AllowAny])
     def bulk_enrol(self, request, **kwargs):
         course_id = request.query_params.get('course')
         try:
@@ -60,6 +60,13 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
                             status=status.HTTP_400_BAD_REQUEST)
+
+        def enrol_and_save(student):
+            student.enrol(course)
+            student.save()
+        map(enrol_and_save, self.get_queryset())
+
+        return Response(self.get_serializer(self.get_queryset(), many=True).data)
 
 
     @list_route(permission_classes=[AllowAny])
@@ -92,9 +99,9 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response(data={'error': 'Student already enrolled to course %s' % course_id, 'details': ''},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        student.enrollments.append(Enrollment(course=course, grade=None))
+        student.enrol(course)
         student.save()
-        return Response()
+        return Response(self.get_serializer(student).data)
 
     @detail_route(methods=['post'], permission_classes=[AllowAny], url_path='grade')
     def grade(self, request, id=None):
@@ -113,4 +120,4 @@ class StudentViewSet(viewsets.ModelViewSet):
         enrollment = filter(lambda enrollment: enrollment.course == course, student.enrollments)[0]
         enrollment.grade = request.data.get('grade')
         student.save()
-        return Response()
+        return Response(self.get_serializer(student).data)
