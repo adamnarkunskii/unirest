@@ -38,7 +38,7 @@ def course():
     course_path = path_for_course(course)
 
     r = requests.delete(course_path)
-    assert r.ok
+    assert r.ok or r.status_code == 404
 
     r = requests.get(course_path)
     assert r.status_code == 404
@@ -69,6 +69,15 @@ def student():
 
     r = requests.get(student_path)
     assert r.status_code == 404
+
+
+def test_delete_course_de_enrol(student, course):
+    enrol(course, student)
+    r = requests.delete(path_for_course(course))
+    assert r.ok
+
+    student = get_student(path_for_student(student))
+    assert len(student['enrollments']) == 0
 
 
 def test_outstanding(student, course):

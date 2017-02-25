@@ -18,15 +18,17 @@ class Course(Document):
     def __repr__(self):
         return '<Course %s %s:%s>' % (self.subject, self.year, self.semester)
 
+    def get_enrolled_students(self, students_queryset):
+        return filter(lambda student: self in student.enrolled_courses(),
+                      students_queryset)
+
 
 class Enrollment(EmbeddedDocument):
     course = fields.ReferenceField(Course)
     grade = fields.IntField(null=True, blank=True)
-    is_deleted = fields.BooleanField(defult=False)
 
     def __repr__(self):
-        deleted = " XXX " if self.is_deleted else ""
-        return '<Enrollment %s (%s)%s>' % (self.course.subject, self.grade, deleted)
+        return '<Enrollment %s (%s)>' % (self.course.subject, self.grade)
 
 
 class Student(Document):

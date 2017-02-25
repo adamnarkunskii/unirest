@@ -28,8 +28,18 @@ class CourseViewSet(viewsets.ModelViewSet):
         return queryset
 
     def destroy(self, request, *args, **kwargs):
-        
-        super(CourseViewSet, self).destroy(*args, **kwargs)
+        course = self.get_object()
+        students = course.get_enrolled_students(Student.objects.all())
+
+        def de_enrol(student):
+            for enrollment in filter(lambda enrollment: enrollment.course == course, student.enrollments):
+                student.enrollments.remove(enrollment)
+            student.save()
+
+        map(de_enrol, students)
+
+        self.perform_destroy(course)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class StudentViewSet(viewsets.ModelViewSet):
@@ -108,8 +118,7 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        enrolled_students = filter(lambda student: course in student.enrolled_courses(),
-                                   self.get_queryset())
+        enrolled_students = course.get_enrolled_students(self.get_queryset())
 
         serializer = self.get_serializer(enrolled_students, many=True)
         return Response(serializer.data)
