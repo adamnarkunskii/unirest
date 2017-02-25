@@ -27,6 +27,10 @@ class CourseViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(points__gte=minimal_points)
         return queryset
 
+    def destroy(self, request, *args, **kwargs):
+        
+        super(CourseViewSet, self).destroy(*args, **kwargs)
+
 
 class StudentViewSet(viewsets.ModelViewSet):
     '''
