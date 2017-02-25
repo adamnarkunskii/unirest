@@ -52,6 +52,32 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def get_outstanding_students(self, minimum_score=0):
+        def calc_score(student):
+            sum = 0
+            points = 0
+            for enrollment in student.enrollments:
+                sum += enrollment.grade * enrollment.course.points
+                points += enrollment.course.points
+            return student, sum / points
+
+        student_scores = map(calc_score, self.get_queryset())
+        high_student_scores = filter(lambda student_scores: student_scores[1] >= minimum_score, student_scores)
+        high_student_scores = sorted(high_student_scores, key=lambda x: x[1], reverse=True)
+        just_high_students = map(lambda student_score: student_score[0], high_student_scores)
+        return just_high_students
+
+    @list_route(permission_classes=[AllowAny])
+    def outstanding(self, request):
+        outstanding_students = self.get_outstanding_students(minimum_score=90)
+        return Response(self.get_serializer(outstanding_students, many=True).data)
+
+    @list_route(permission_classes=[AllowAny])
+    def valedictorian(self, request):
+        outstanding_students = self.get_outstanding_students()
+        valedict = outstanding_students[0]
+        return Response(self.get_serializer(valedict).data)
+
     @list_route(methods=['post'], permission_classes=[AllowAny])
     def bulk_enrol(self, request, **kwargs):
         course_id = request.query_params.get('course')
@@ -64,10 +90,10 @@ class StudentViewSet(viewsets.ModelViewSet):
         def enrol_and_save(student):
             student.enrol(course)
             student.save()
+
         map(enrol_and_save, self.get_queryset())
 
         return Response(self.get_serializer(self.get_queryset(), many=True).data)
-
 
     @list_route(permission_classes=[AllowAny])
     def enrolled(self, request, **kwargs):

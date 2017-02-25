@@ -71,6 +71,22 @@ def student():
     assert r.status_code == 404
 
 
+def test_outstanding(student, course):
+    enrol(course, student)
+    grade(course, student, 88)
+    r = requests.get(STUDENTS_API_ROOT + 'outstanding/')
+    assert r.ok
+
+    assert len(r.json()) == 0
+
+
+    grade(course, student, 91)
+    r = requests.get(STUDENTS_API_ROOT + 'outstanding/')
+    assert r.ok
+
+    assert len(r.json()) == 1
+
+
 def test_bulk_enrol(student, course):
     assert_enrolled_students(course, count=0)
     r = requests.post(STUDENTS_API_ROOT + 'bulk_enrol/', params={'course': course['id'], 'name': 'Lucy'})
@@ -172,11 +188,18 @@ def test_assign_a_student_to_a_course_and_grade(student, course):
     r = requests.post(student_path + 'enrol/', data=enrollment_data)
     assert r.ok
 
-    enrollment_data['grade'] = 92
-    r = requests.post(student_path + 'grade/', data=enrollment_data)
-    assert r.ok
-
+    grade(course, student, 88)
+    enrollment_data['grade'] = 88
     verify_enrollment(course, enrollment_data, student_path)
+
+
+def grade(course, student, grade):
+    enrollment_data = {
+        'course': course['id'],
+        'grade': grade
+    }
+    r = requests.post(path_for_student(student) + 'grade/', data=enrollment_data)
+    assert r.ok
 
 
 def verify_enrollment(course, enrollment, student_path):
