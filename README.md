@@ -1,5 +1,6 @@
-Setup:
-======
+# UNIREST
+
+## Setup:
 Start server:
 ```shell
 $ pip install -r requirements.txt
