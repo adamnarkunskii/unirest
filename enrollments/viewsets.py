@@ -54,7 +54,13 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     @list_route(permission_classes=[AllowAny])
     def bulk_enrol(self, request, **kwargs):
-        pass
+        course_id = request.query_params.get('course')
+        try:
+            course = Course.objects.get(id=course_id)
+        except Exception as e:
+            return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
+                            status=status.HTTP_400_BAD_REQUEST)
+
 
     @list_route(permission_classes=[AllowAny])
     def enrolled(self, request, **kwargs):
@@ -66,7 +72,7 @@ class StudentViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         enrolled_students = filter(lambda student: course in student.enrolled_courses(),
-                                   Student.objects.all())
+                                   self.get_queryset())
 
         serializer = self.get_serializer(enrolled_students, many=True)
         return Response(serializer.data)
