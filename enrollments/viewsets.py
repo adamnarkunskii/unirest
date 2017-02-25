@@ -45,6 +45,31 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        existing_courses = map(lambda enrollment: enrollment.course, student.enrollments)
+        if course in existing_courses:
+            return Response(data={'error': 'Student already enrolled to course %s' % course_id, 'details': ''},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         student.enrollments.append(Enrollment(course=course, grade=None))
+        student.save()
+        return Response()
+
+    @detail_route(methods=['post'], permission_classes=[AllowAny], url_path='grade')
+    def grade(self, request, id=None):
+        student = self.get_object()
+        course_id = request.data.get('course')
+        try:
+            course = Course.objects.get(id=course_id)
+        except Exception as e:
+            return Response(data={'error': 'Invalid course_id %s' % course_id, 'details': e.message},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        existing_courses = map(lambda enrollment: enrollment.course, student.enrollments)
+        if course not in existing_courses:
+            return Response(data={'error': 'Student not enrolled to course %s' % course_id, 'details': ''},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        enrollment = filter(lambda enrollment: enrollment.course == course, student.enrollments)[0]
+        enrollment.grade = request.data.get('grade')
         student.save()
         return Response()

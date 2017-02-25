@@ -84,7 +84,7 @@ def test_patch_student(student):
     assert r.json()['name'] == new_name
 
 
-def test_assign_a_student_to_a_course(student, course):
+def test_assign_a_student_to_a_course_and_grade(student, course):
     student_path = path_for_student(student)
     enrollment = {
         'course': course['id'],
@@ -92,3 +92,24 @@ def test_assign_a_student_to_a_course(student, course):
     }
     r = requests.post(student_path + 'enrol/', data=enrollment)
     assert r.ok
+
+    r = requests.post(student_path + 'enrol/', data=enrollment)
+    assert not r.ok
+
+    r = requests.get(student_path)
+    student = r.json()
+    enrollments = student['enrollments']
+    assert len(enrollments) == 1
+    assert enrollments[0]['course'] == course['id']
+    assert enrollments[0]['grade'] is None
+
+    enrollment['grade'] = 92
+    r = requests.post(student_path + 'grade/', data=enrollment)
+    assert r.ok
+
+    r = requests.get(student_path)
+    student = r.json()
+    enrollments = student['enrollments']
+    assert len(enrollments) == 1
+    assert enrollments[0]['course'] == course['id']
+    assert enrollments[0]['grade'] is 92
