@@ -79,12 +79,18 @@ def test_outstanding(student, course):
 
     assert len(r.json()) == 0
 
-
     grade(course, student, 91)
     r = requests.get(STUDENTS_API_ROOT + 'outstanding/')
     assert r.ok
 
     assert len(r.json()) == 1
+
+
+def test_valedictorian(student, course):
+    enrol(course, student)
+    grade(course, student, 88)
+    r = requests.get(STUDENTS_API_ROOT + 'valedictorian/')
+    assert r.ok
 
 
 def test_bulk_enrol(student, course):
