@@ -13,6 +13,8 @@ class Course(Document):
     year = fields.IntField(required=True)
     semester = fields.StringField(max_length=1, choices=SEMESTERS)
 
+    points = fields.IntField(required=True, default=4)
+
     def __repr__(self):
         return '<Course %s %s:%s>' % (self.subject, self.year, self.semester)
 
